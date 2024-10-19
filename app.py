@@ -29,11 +29,16 @@ def get_nfl_matchups():
         else:
             return jsonify({"error": "Week column not found in game log data"}), 404
 
+        # Convert any Timedelta or other non-serializable columns
+        for column in game_log_filtered.select_dtypes(['timedelta64']).columns:
+            game_log_filtered[column] = game_log_filtered[column].astype(str)
+
+        # Convert to dictionary and return JSON
         games = game_log_filtered.to_dict(orient='records')
         return jsonify(games)
     except Exception as e:
         app.logger.error(f"Error occurred: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
+        
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
