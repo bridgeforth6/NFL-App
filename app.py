@@ -4,9 +4,9 @@ from pro_football_reference_web_scraper import player_game_log as p
 from pro_football_reference_web_scraper import team_game_log as t
 
 app = Flask(__name__)
-CORS(app)  # This allows cross-origin requests from your GitHub Pages frontend
+CORS(app)  # Allows cross-origin requests for frontend communication
 
-# Endpoint to get player stats
+# Endpoint for player stats
 @app.route('/api/player_game_log', methods=['GET'])
 def get_player_game_log():
     player = request.args.get('player')
@@ -17,7 +17,7 @@ def get_player_game_log():
         return jsonify({"error": "Player, position, and season are required"}), 400
 
     try:
-        # Use the scraper package to get player stats
+        # Get player game log using the scraper package
         game_log = p.get_player_game_log(player=player, position=position, season=season)
         game_log_dict = game_log.to_dict(orient='records')
         return jsonify(game_log_dict)
@@ -25,7 +25,7 @@ def get_player_game_log():
         app.logger.error(f"Error occurred: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-# Endpoint to get team stats
+# Endpoint for team stats
 @app.route('/api/team_game_log', methods=['GET'])
 def get_team_game_log():
     team = request.args.get('team')
@@ -35,10 +35,23 @@ def get_team_game_log():
         return jsonify({"error": "Team and season are required"}), 400
 
     try:
-        # Use the scraper package to get team stats
+        # Get team game log using the scraper package
         game_log = t.get_team_game_log(team=team, season=season)
+
+        # Check and convert Timedelta columns to strings
+        if 'timedelta64' in game_log.dtypes.values:
+            for column in game_log.select_dtypes(['timedelta64']).columns:
+                game_log[column] = game_log[column].astype(str)
+
+        # Check if game_log is empty
+        if game_log is None or game_log.empty:
+            return jsonify({"error": "No data found for the specified team and season"}), 404
+
         game_log_dict = game_log.to_dict(orient='records')
         return jsonify(game_log_dict)
+    except AttributeError as e:
+        app.logger.error(f"Error occurred: Missing data or invalid element. Details: {str(e)}")
+        return jsonify({"error": "Data for the specified team and season could not be retrieved. Please check the inputs."}), 500
     except Exception as e:
         app.logger.error(f"Error occurred: {str(e)}")
         return jsonify({"error": str(e)}), 500
