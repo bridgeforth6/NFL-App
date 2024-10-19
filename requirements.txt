@@ -1,4 +1,6 @@
-streamlit
-numpy
-matplotlib
-pandas
+Flask
+Flask-Cors
+gunicorn
+pro-football-reference-web-scraper
+Dask
+
