@@ -38,9 +38,9 @@ def get_team_game_log():
         # Get team game log using the scraper package
         game_log = t.get_team_game_log(team=team, season=season)
 
-        # Check and convert Timedelta columns to strings
-        if 'timedelta64' in game_log.dtypes.values:
-            for column in game_log.select_dtypes(['timedelta64']).columns:
+        # Convert any Timedelta or other non-serializable columns to strings
+        for column in game_log.columns:
+            if game_log[column].dtype == 'timedelta64[ns]':
                 game_log[column] = game_log[column].astype(str)
 
         # Check if game_log is empty
